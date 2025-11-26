@@ -100,11 +100,11 @@ body.dark-mode .results-table {
 }
 
 body.dark-mode .results-table thead tr.header-labels-row th {
-    background: linear-gradient(135deg, #1a1f2e 0%, #242b3d 100%);
+    background: #242b3d;
 }
 
 body.dark-mode .results-table thead tr.filter-row th {
-    background: linear-gradient(135deg, #1a1f2e 0%, #242b3d 100%);
+    background: #242b3d;
 }
 
 body.dark-mode .results-table td {
@@ -274,7 +274,7 @@ body.dark-mode .export-btn:hover {
 
 /* Summary Box Dark Mode */
 body.dark-mode div[style*="background: #f0f7ff"] {
-    background: #2d3548 !important;
+    background: #38435c !important;
     border-left-color: #4a5a75 !important;
     color: #d6e0ea !important;
 }
