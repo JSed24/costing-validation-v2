@@ -958,7 +958,7 @@ class ExcelV1Processor {
 
         const tbody = table.querySelector('tbody');
         const rows = tbody.querySelectorAll('tr');
-        
+
         // Get all filter values
         const filters = {};
         const filterSelects = table.querySelectorAll('.column-filter');
@@ -1097,7 +1097,7 @@ class ExcelV1Processor {
 
         const tbody = table.querySelector('tbody');
         const rows = tbody.querySelectorAll('tr');
-        
+
         // Convert search term to lowercase for case-insensitive search
         const searchLower = searchTerm.toLowerCase().trim();
 
@@ -1110,14 +1110,14 @@ class ExcelV1Processor {
         // Search through each row
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            
+
             // Get text from first two columns (OB Files and Buyer CBD Files)
             const obFileText = cells[0] ? cells[0].textContent.toLowerCase() : '';
             const buyerCbdText = cells[1] ? cells[1].textContent.toLowerCase() : '';
-            
+
             // Check if search term is found in either column
             const matchFound = obFileText.includes(searchLower) || buyerCbdText.includes(searchLower);
-            
+
             // Show or hide row based on search match
             if (matchFound) {
                 // Check if row should be visible based on other filters
