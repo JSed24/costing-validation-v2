@@ -204,6 +204,8 @@ class ExcelV2Processor {
     extractTrimsData(jsonData) {
         const trimsData = [];
         
+        console.log(`📊 Total rows in Excel: ${jsonData.length}`);
+        
         // Scan through all rows in the Excel file
         for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
@@ -213,10 +215,19 @@ class ExcelV2Processor {
                 continue;
             }
             
+            // Log every row in column A for debugging
+            console.log(`Row ${i}: "${row[0]}"`);
+            
             const cellValue = row[0].toString().trim().toUpperCase();
             
-            // Skip section headers and totals
-            if (cellValue.includes('BURTON') || 
+            // Check if this is a "sewing thread" row first (before skipping headers)
+            const normalizedDesc = row[0].toString().trim().toLowerCase();
+            // Match any variation of "sewing thread" including "Sewing Thread - See Vendor Guide"
+            const isSewingThread = normalizedDesc.includes('sewing') && normalizedDesc.includes('thread');
+            
+            // Skip section headers and totals (but NOT sewing thread)
+            if (!isSewingThread && (
+                cellValue.includes('BURTON') || 
                 cellValue.includes('TARGET') ||
                 cellValue.includes('FABRIC') ||
                 cellValue.includes('TRIMS') ||
@@ -234,11 +245,11 @@ class ExcelV2Processor {
                 cellValue === 'QUOTA' ||
                 cellValue === 'FREIGHT' ||
                 cellValue === 'DUTY' ||
-                cellValue === 'OVERHEAD') {
+                cellValue === 'OVERHEAD')) {
                 continue;
             }
             
-            // Extract all potential trim items from column A
+            // Standard format for all items (including sewing thread)
             trimsData.push({
                 description: row[0] ? row[0].toString().trim() : '',
                 details: row[1] ? row[1].toString().trim() : '',
