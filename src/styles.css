@@ -100,13 +100,14 @@ body {
     transition: all 0.3s ease;
     margin-right: -2px;
     min-width: 45px;
+    width: auto;
 }
 
 .tab-btn:hover {
     background-color: #d9e3f0;
     color: #2b4a6c;
     padding: 0.4rem 1.5rem;
-    font-size: 0.75rem;
+    min-width: 80px;
 }
 
 .tab-btn.active {
@@ -115,7 +116,7 @@ body {
     border-bottom: 2px solid white;
     z-index: 1;
     padding: 0.4rem 1.5rem;
-    font-size: 0.75rem;
+    min-width: 80px;
 }
 
 .tab-content {

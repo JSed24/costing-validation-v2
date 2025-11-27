@@ -514,7 +514,32 @@ class ExcelV2Processor {
 
         let html = '';
 
+        // Add search bar and export button at the top
+        html += `
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <div class="search-container">
+                    <div class="search-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        class="search-input-expandable" 
+                        placeholder="Search by filename..."
+                        oninput="window.excelV2Processor.searchByFilename(this.value)"
+                    />
+                </div>
+                <button onclick="window.excelV2Processor.exportToPDF()" class="export-btn">
+                    Export
+                </button>
+            </div>
+        `;
+
         for (const fileResult of results) {
+            // Wrap each file's results in a group container
+            html += `<div class="file-result-group">`;
+
             // Add summary at the top (like V1)
             const totalItems = fileResult.results.length;
             const validItems = fileResult.results.filter(r => {
@@ -524,7 +549,7 @@ class ExcelV2Processor {
             }).length;
 
             html += `
-                <div style="margin-bottom: 20px; padding: 15px; background: #f0f7ff; border-radius: 10px; border-left: 4px solid #3b82f6;">
+                <div class="file-summary-box">
                     <strong>File:</strong> ${fileResult.fileName}<br>
                     <strong>Summary:</strong> ${validItems} out of ${totalItems} items fully match the OB file
                 </div>
@@ -590,7 +615,7 @@ class ExcelV2Processor {
             html += `
                     </tbody>
                 </table>
-            `;
+            </div>`;  // Close file-result-group
         }
 
         return html;
@@ -610,6 +635,303 @@ class ExcelV2Processor {
                 </p>
             </div>
         `;
+    }
+
+    /**
+     * Export results to PDF
+     */
+    async exportToPDF() {
+        const resultsContainer = document.getElementById('results-v2');
+
+        if (!resultsContainer || !this.bcbdResults || this.bcbdResults.length === 0) {
+            alert('No results to export. Please generate results first.');
+            return;
+        }
+
+        try {
+            // Import jsPDF library dynamically if not already loaded
+            if (typeof window.jspdf === 'undefined') {
+                await this.loadJsPDF();
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+
+            // Add title
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('Burton Cost Breakdown Comparison - V2', 14, 15);
+
+            // Add timestamp
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const timestamp = new Date().toLocaleString();
+            doc.text(`Generated: ${timestamp}`, 14, 22);
+
+            let currentY = 28;
+
+            // Process each file result
+            for (let fileIndex = 0; fileIndex < this.bcbdResults.length; fileIndex++) {
+                const fileResult = this.bcbdResults[fileIndex];
+
+                // Add page break if not the first file and not enough space
+                if (fileIndex > 0) {
+                    doc.addPage();
+                    currentY = 15;
+                }
+
+                // Add file name and summary
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text(`File: ${fileResult.fileName}`, 14, currentY);
+                currentY += 6;
+
+                // Calculate summary
+                const totalItems = fileResult.results.length;
+                const validItems = fileResult.results.filter(r => {
+                    if (r.status !== 'FOUND') return false;
+                    const comp = r.comparison;
+                    return Object.values(comp).every(v => v === 'VALID');
+                }).length;
+
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Summary: ${validItems} out of ${totalItems} items fully match the OB file`, 14, currentY);
+                currentY += 8;
+
+                // Prepare table data
+                const tableData = this.extractTableDataForFile(fileResult);
+
+                // Add table using autoTable plugin
+                doc.autoTable({
+                    head: tableData.headers,
+                    body: tableData.rows,
+                    startY: currentY,
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 3,
+                        overflow: 'linebreak',
+                        cellWidth: 'wrap'
+                    },
+                    headStyles: {
+                        fillColor: [43, 74, 108],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        fontSize: 9
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 55 },  // Item Name - increased
+                        1: { cellWidth: 45 },  // Material - increased
+                        2: { cellWidth: 40 },  // Supplier - increased
+                        3: { cellWidth: 15 },  // Qty
+                        4: { cellWidth: 25 },  // Wastage
+                        5: { cellWidth: 15 },  // Unit
+                        6: { cellWidth: 30 },  // Unit Price - increased
+                        7: { cellWidth: 30 }   // Total - increased
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    margin: { top: 10, right: 10, bottom: 10, left: 10 },
+                    didParseCell: (data) => {
+                        if (data.section === 'body') {
+                            const cellText = data.cell.text[0];
+                            
+                            // Color code based on content
+                            if (cellText && cellText.includes('⚠️')) {
+                                data.cell.styles.textColor = [153, 27, 27];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (cellText && cellText.includes('Empty')) {
+                                data.cell.styles.textColor = [153, 27, 27];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (cellText && cellText.includes('Expected:')) {
+                                data.cell.styles.textColor = [217, 119, 6];
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Add page numbers
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(
+                    `Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                );
+            }
+
+            // Generate filename with date
+            const now = new Date();
+            const date = now.toISOString().slice(0, 10);
+            const filename = `BurtonCostBreakdown_V2_${date}.pdf`;
+
+            // Save the PDF
+            doc.save(filename);
+
+            console.log('PDF exported successfully:', filename);
+
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            alert('Failed to export PDF. Please try again.');
+        }
+    }
+
+    /**
+     * Extract table data for a specific file result
+     */
+    extractTableDataForFile(fileResult) {
+        const headers = [['Item Name', 'Material', 'Supplier', 'Qty', 'Wastage', 'Unit', 'Unit Price', 'Total']];
+        const rows = [];
+
+        for (const item of fileResult.results) {
+            if (item.status === 'NOT_FOUND_IN_OB') {
+                rows.push([
+                    item.itemName,
+                    '⚠️ Not found in OB file',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    ''
+                ]);
+            } else if (item.status === 'NOT_FOUND_IN_BUYER') {
+                rows.push([
+                    item.itemName,
+                    '⚠️ Not found in Buyer CBD file',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    ''
+                ]);
+            } else {
+                const comp = item.comparison;
+                const obData = item.obData;
+                const buyerData = item.buyerData;
+
+                // Helper to format cell for PDF
+                const formatForPDF = (obVal, buyerVal, status, isNumeric) => {
+                    if (!buyerVal || buyerVal === '') {
+                        const displayOB = isNumeric ? this.formatToThreeDecimals(obVal) : obVal;
+                        return `Empty (Expected: ${displayOB})`;
+                    }
+
+                    const displayBuyer = isNumeric ? this.formatToThreeDecimals(buyerVal) : buyerVal;
+                    const displayOB = isNumeric ? this.formatToThreeDecimals(obVal) : obVal;
+
+                    if (status === 'VALID') {
+                        return displayBuyer;
+                    } else {
+                        return `${displayBuyer} (Expected: ${displayOB})`;
+                    }
+                };
+
+                rows.push([
+                    item.itemName,
+                    formatForPDF(obData.materialName, buyerData.material, comp.material, false),
+                    formatForPDF(obData.supplier, buyerData.supplier, comp.supplier, false),
+                    formatForPDF(obData.quantity, buyerData.qty, comp.qty, false),
+                    formatForPDF(obData.wastage, buyerData.wastage, comp.wastage, true),
+                    formatForPDF(obData.unit, buyerData.unit, comp.unit, false),
+                    formatForPDF(obData.unitPrice, buyerData.unitPrice, comp.unitPrice, true),
+                    formatForPDF(obData.totalPrice, buyerData.total, comp.total, true)
+                ]);
+            }
+        }
+
+        return { headers, rows };
+    }
+
+    /**
+     * Load jsPDF library dynamically
+     */
+    loadJsPDF() {
+        return new Promise((resolve, reject) => {
+            if (typeof window.jspdf !== 'undefined') {
+                resolve();
+                return;
+            }
+
+            const jsPDFScript = document.createElement('script');
+            jsPDFScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            jsPDFScript.onload = () => {
+                const autoTableScript = document.createElement('script');
+                autoTableScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js';
+                autoTableScript.onload = () => {
+                    console.log('jsPDF and autoTable loaded successfully');
+                    resolve();
+                };
+                autoTableScript.onerror = () => {
+                    reject(new Error('Failed to load jsPDF autoTable plugin'));
+                };
+                document.head.appendChild(autoTableScript);
+            };
+            jsPDFScript.onerror = () => {
+                reject(new Error('Failed to load jsPDF library'));
+            };
+            document.head.appendChild(jsPDFScript);
+        });
+    }
+
+    /**
+     * Search by filename - filters file result groups based on filename
+     */
+    searchByFilename(searchTerm) {
+        const fileGroups = document.querySelectorAll('.file-result-group');
+        
+        if (!fileGroups || fileGroups.length === 0) {
+            return;
+        }
+
+        // Convert search term to lowercase for case-insensitive search
+        const searchLower = searchTerm.toLowerCase().trim();
+
+        // If search is empty, show all groups
+        if (searchLower === '') {
+            fileGroups.forEach(group => {
+                group.style.display = '';
+            });
+            return;
+        }
+
+        // Filter each file group based on filename
+        fileGroups.forEach(group => {
+            const summaryBox = group.querySelector('.file-summary-box');
+            if (!summaryBox) return;
+
+            // Get the full text content
+            const fullText = summaryBox.textContent || summaryBox.innerText;
+            
+            // Split by line breaks and find the line with "File:"
+            const lines = fullText.split(/\r?\n/).map(line => line.trim());
+            let filename = '';
+            
+            for (const line of lines) {
+                if (line.toLowerCase().startsWith('file:')) {
+                    // Extract everything after "File:"
+                    filename = line.substring(5).trim().toLowerCase();
+                    break;
+                }
+            }
+            
+            // Check if filename contains the search term
+            if (filename && filename.includes(searchLower)) {
+                group.style.display = '';
+            } else {
+                group.style.display = 'none';
+            }
+        });
     }
 }
 
