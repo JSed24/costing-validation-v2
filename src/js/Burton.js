@@ -1,6 +1,6 @@
 /**
  * Excel V2 Processing Logic
- * Automatically loads Burton_CostBreakdown.csv from public folder
+ * Automatically loads Burton_CostBreakdown.csv from assets/data folder
  */
 
 class ExcelV2Processor {
@@ -14,8 +14,8 @@ class ExcelV2Processor {
      */
     async initialize() {
         try {
-            // Fetch the Burton_CostBreakdown.csv file from public folder
-            const response = await fetch('public/Burton_CostBreakdown.csv');
+            // Fetch the Burton_CostBreakdown.csv file from assets/data folder
+            const response = await fetch('assets/data/Burton_CostBreakdown.csv');
             if (!response.ok) {
                 throw new Error('Failed to load Burton_CostBreakdown.csv');
             }
@@ -29,7 +29,7 @@ class ExcelV2Processor {
             console.log('Burton Cost Breakdown loaded successfully:', this.burtonCostData);
         } catch (error) {
             console.error('Error loading Burton Cost Breakdown:', error);
-            this.displayError('Failed to load Burton_CostBreakdown.csv from public folder');
+            this.displayError('Failed to load Burton_CostBreakdown.csv from assets/data folder');
         }
     }
 
