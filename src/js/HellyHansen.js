@@ -68,7 +68,7 @@ class HellyHansenProcessor {
         this.hellyHansenCostData.forEach((item, index) => {
             contentHTML += `
                 <div class="burton-cost-item">
-                    <div class="burton-item-line"><strong>Item:</strong> ${item.item}</div>
+                    <div class="burton-item-line"><strong>${item.item}</strong></div>
                     <div class="burton-item-line"><strong>CONSM:</strong> ${item.consm}</div>
                     <div class="burton-item-line"><strong>U/P:</strong> ${item.up}</div>
                     <div class="burton-item-line"><strong>Amount:</strong> ${item.amount}</div>
@@ -357,8 +357,8 @@ class HellyHansenProcessor {
             for (const item of fileResult.results) {
                 // Check if any field is invalid for row background
                 const hasInvalid = item.consmStatus !== 'VALID' ||
-                                   item.upStatus !== 'VALID' ||
-                                   item.amountStatus !== 'VALID';
+                    item.upStatus !== 'VALID' ||
+                    item.amountStatus !== 'VALID';
                 const rowBg = hasInvalid ? 'background-color: #fef2f2;' : '';
 
                 html += `
