@@ -22,8 +22,8 @@ class ExcelFileHandler {
     }
 
     attachEventListeners() {
-        // For V2, don't setup OB drop zone (Burton Cost Breakdown is auto-loaded)
-        if (this.version !== 'v2') {
+        // For V2, V3, and V4, don't setup OB drop zone (Cost Breakdown is auto-loaded from CSV)
+        if (this.version !== 'v2' && this.version !== 'v3' && this.version !== 'v4') {
             this.setupDropZone(this.obDropZone, this.obFileInput, 'ob');
         }
         this.setupDropZone(this.bcbdDropZone, this.bcbdFileInput, 'bcbd');
@@ -348,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.excelHandlerV1 = new ExcelFileHandler('v1');
     window.excelHandlerV2 = new ExcelFileHandler('v2');
     window.excelHandlerV3 = new ExcelFileHandler('v3');
+    window.excelHandlerV4 = new ExcelFileHandler('v4');
 
     document.querySelectorAll('.generate-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -356,17 +357,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    console.log('Costing Validation initialized with 3 versions');
+    console.log('Costing Validation initialized with 4 versions');
 });
 
 async function handleGenerateResults(version) {
     const handler = window[`excelHandler${version.toUpperCase()}`];
     const resultsContent = document.getElementById(`results-${version}`);
     
-    // Special handling for V2 - only needs BCBD files
+    // Special handling for V2 - only needs BCBD files (Burton)
     if (version === 'v2') {
         const bcbdFiles = handler.getBCBDFiles();
-        
+
         if (bcbdFiles.length === 0) {
             alert('Please upload Buyer CBD files before generating results.');
             return;
@@ -390,8 +391,64 @@ async function handleGenerateResults(version) {
         }
         return;
     }
+
+    // Special handling for V3 - only needs BCBD files (Columbia)
+    if (version === 'v3') {
+        const bcbdFiles = handler.getBCBDFiles();
+
+        if (bcbdFiles.length === 0) {
+            alert('Please upload Buyer CBD files before generating results.');
+            return;
+        }
+
+        console.log(`Generating results for ${version.toUpperCase()}...`);
+        console.log('BCBD Files:', bcbdFiles);
+
+        // Show loading state with animation
+        resultsContent.innerHTML = `
+            <div class="loading-container">
+                <div class="loader"></div>
+                <p class="loading-text">Processing ${bcbdFiles.length} BCBD file(s) with Columbia Cost Breakdown...</p>
+                <p class="loading-subtext">Please wait while we scan the files...</p>
+            </div>
+        `;
+
+        if (window.columbiaProcessor) {
+            const results = await window.columbiaProcessor.processFiles(bcbdFiles);
+            resultsContent.innerHTML = results;
+        }
+        return;
+    }
+
+    // Special handling for V4 - only needs BCBD files (Helly Hansen)
+    if (version === 'v4') {
+        const bcbdFiles = handler.getBCBDFiles();
+
+        if (bcbdFiles.length === 0) {
+            alert('Please upload Buyer CBD files before generating results.');
+            return;
+        }
+
+        console.log(`Generating results for ${version.toUpperCase()}...`);
+        console.log('BCBD Files:', bcbdFiles);
+
+        // Show loading state with animation
+        resultsContent.innerHTML = `
+            <div class="loading-container">
+                <div class="loader"></div>
+                <p class="loading-text">Processing ${bcbdFiles.length} BCBD file(s) with Helly Hansen Cost Breakdown...</p>
+                <p class="loading-subtext">Please wait while we scan the files...</p>
+            </div>
+        `;
+
+        if (window.hellyHansenProcessor) {
+            const results = await window.hellyHansenProcessor.processFiles(bcbdFiles);
+            resultsContent.innerHTML = results;
+        }
+        return;
+    }
     
-    // Standard handling for V1 and V3
+    // Standard handling for V1
     if (!handler.areBothFilesLoaded()) {
         alert('Please upload both OB and BCBD files before generating results.');
         return;
