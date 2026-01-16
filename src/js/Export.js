@@ -778,6 +778,25 @@ class PDFExporter {
                             return '-';
                         }
 
+                        // Special handling for MARGIN_PROFIT - check BEFORE empty check
+                        if (specialCase === 'MARGIN_PROFIT') {
+                            if (!buyerVal || buyerVal === '' || buyerVal === 'NOT FOUND') {
+                                return `Empty (Expected: 0.45 to 0.55)`;
+                            }
+                            const displayBuyer = formatToFourDecimals(buyerVal);
+                            return `${displayBuyer} (Expected: 0.45 to 0.55)`;
+                        }
+
+                        // Special handling for FINANCIAL_OVERHEAD - check BEFORE empty check
+                        if (specialCase === 'FINANCIAL_OVERHEAD') {
+                            const expectedText = item.countryOfOrigin ? `${obVal} - ${item.countryOfOrigin}` : obVal;
+                            if (!buyerVal || buyerVal === '' || buyerVal === 'NOT FOUND') {
+                                return `Empty (Expected: ${expectedText})`;
+                            }
+                            const displayBuyer = formatToFourDecimals(buyerVal);
+                            return `${displayBuyer} (Expected: ${expectedText})`;
+                        }
+
                         if (!buyerVal || buyerVal === '' || buyerVal === 'NOT FOUND') {
                             const displayOB = isNumeric && obVal ? formatToFourDecimals(obVal) : obVal;
                             return `Empty (Expected: ${displayOB})`;
@@ -785,16 +804,6 @@ class PDFExporter {
 
                         const displayBuyer = isNumeric ? formatToFourDecimals(buyerVal) : buyerVal;
                         const displayOB = isNumeric ? formatToFourDecimals(obVal) : obVal;
-
-                        // Special handling for MARGIN_PROFIT
-                        if (specialCase === 'MARGIN_PROFIT') {
-                            return `${displayBuyer} (Expected: 0.45 to 0.55)`;
-                        }
-
-                        // Special handling for FINANCIAL_OVERHEAD
-                        if (specialCase === 'FINANCIAL_OVERHEAD' && item.countryOfOrigin) {
-                            return `${displayBuyer} (Expected: ${displayOB} - ${item.countryOfOrigin})`;
-                        }
 
                         if (status === 'VALID') {
                             return displayBuyer;
