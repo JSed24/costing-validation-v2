@@ -27,7 +27,7 @@ class ExcelFileHandler {
             this.setupDropZone(this.obDropZone, this.obFileInput, 'ob');
         }
         this.setupDropZone(this.bcbdDropZone, this.bcbdFileInput, 'bcbd');
-        
+
         // Prevent default drag behavior on document
         document.addEventListener('dragover', (e) => e.preventDefault());
         document.addEventListener('drop', (e) => e.preventDefault());
@@ -57,7 +57,7 @@ class ExcelFileHandler {
         e.preventDefault();
         e.stopPropagation();
         dropZone.classList.remove('drag-over');
-        
+
         const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) {
             this.processFiles(files, type);
@@ -73,7 +73,7 @@ class ExcelFileHandler {
 
     processFiles(files, type) {
         const fileArray = type === 'ob' ? this.obFiles : this.bcbdFiles;
-        
+
         files.forEach(file => {
             if (!this.isValidFileType(file)) {
                 alert(`Invalid file type: ${file.name}. Please select .xlsx, .xls, or .csv files.`);
@@ -134,7 +134,7 @@ class ExcelFileHandler {
 
         fileItem.appendChild(fileContent);
         fileItem.appendChild(removeBtn);
-        
+
         return fileItem;
     }
 
@@ -155,12 +155,12 @@ class ExcelFileHandler {
             'application/vnd.ms-excel',
             'text/csv'
         ];
-        
+
         const validExtensions = ['.xlsx', '.xls', '.csv'];
         const fileName = file.name.toLowerCase();
-        
-        return validTypes.includes(file.type) || 
-               validExtensions.some(ext => fileName.endsWith(ext));
+
+        return validTypes.includes(file.type) ||
+            validExtensions.some(ext => fileName.endsWith(ext));
     }
 
     getOBFiles() {
@@ -214,7 +214,7 @@ class TabManager {
     attachEventListeners() {
         this.tabs.forEach(tab => {
             tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
-            
+
             // Add hover listeners to change text
             tab.addEventListener('mouseenter', () => {
                 const fullText = tab.getAttribute('data-full');
@@ -222,7 +222,7 @@ class TabManager {
                     tab.textContent = fullText;
                 }
             });
-            
+
             tab.addEventListener('mouseleave', () => {
                 // Only collapse if not active
                 if (!tab.classList.contains('active')) {
@@ -244,7 +244,7 @@ class TabManager {
                 tab.textContent = shortText;
             }
         });
-        
+
         this.tabContents.forEach(content => content.classList.remove('active'));
 
         const selectedTab = document.querySelector(`[data-tab="${tabId}"]`);
@@ -253,7 +253,7 @@ class TabManager {
         if (selectedTab && selectedContent) {
             selectedTab.classList.add('active');
             selectedContent.classList.add('active');
-            
+
             // Set active tab to full text
             const fullText = selectedTab.getAttribute('data-full');
             if (fullText) {
@@ -341,10 +341,12 @@ class DarkModeManager {
     }
 }
 
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.darkModeManager = new DarkModeManager();
     window.tabManager = new TabManager();
+    window.logoEasterEgg = new LogoEasterEgg();
     window.excelHandlerV1 = new ExcelFileHandler('v1');
     window.excelHandlerV2 = new ExcelFileHandler('v2');
     window.excelHandlerV3 = new ExcelFileHandler('v3');
@@ -364,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function handleGenerateResults(version) {
     const handler = window[`excelHandler${version.toUpperCase()}`];
     const resultsContent = document.getElementById(`results-${version}`);
-    
+
     // Special handling for V2 - only needs BCBD files (Burton)
     if (version === 'v2') {
         const bcbdFiles = handler.getBCBDFiles();
@@ -476,7 +478,7 @@ async function handleGenerateResults(version) {
         }
         return;
     }
-    
+
     // Standard handling for V1
     if (!handler.areBothFilesLoaded()) {
         alert('Please upload both OB and BCBD files before generating results.');
@@ -518,4 +520,36 @@ async function handleGenerateResults(version) {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ExcelFileHandler, TabManager };
+}
+
+class LogoEasterEgg {
+    constructor() {
+        this.logo = document.querySelector('.logo');
+        this.speechBubble = null;
+        this.timeout = null;
+        this.init();
+    }
+
+    init() {
+        if (!this.logo) return;
+
+        // Create speech bubble element
+        this.speechBubble = document.createElement('div');
+        this.speechBubble.className = 'speech-bubble';
+        this.speechBubble.textContent = 'Benjamin was here!';
+        this.logo.appendChild(this.speechBubble);
+
+        // Add click listener
+        this.logo.addEventListener('click', () => this.showBubble());
+    }
+
+    showBubble() {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+        this.speechBubble.classList.add('show');
+        this.timeout = setTimeout(() => {
+            this.speechBubble.classList.remove('show');
+        }, 3000);
+    }
 }
